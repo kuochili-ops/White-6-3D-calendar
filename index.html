@@ -1,0 +1,1851 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>𓃥 白六立體週曆 (2026年 11月 15日 週日 – 11月 21日 週六)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Inter', 'Noto Sans TC', sans-serif;
+      background-color: #EAE6DF;
+      touch-action: none;
+    }
+    #canvas-container {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .glass-panel {
+      background: rgba(255, 253, 249, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.85);
+      box-shadow: 0 10px 30px -5px rgba(68, 51, 34, 0.15);
+    }
+    @keyframes pulseBorder {
+      0%, 100% { border-color: rgba(217, 119, 6, 0.55); }
+      50% { border-color: rgba(217, 119, 6, 1); }
+    }
+    .drop-active {
+      animation: pulseBorder 1.2s infinite;
+    }
+  </style>
+  <!-- Reliable Three.js r160 ES Module Import Map -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body class="select-none">
+
+  <!-- Fullscreen 3D Viewport Container -->
+  <div id="canvas-container"></div>
+
+  <!-- Drag & Drop File Overlay -->
+  <div id="drop-overlay" class="fixed inset-0 z-50 hidden items-center justify-center bg-stone-950/65 backdrop-blur-sm p-6 pointer-events-none">
+    <div class="w-full max-w-md rounded-3xl border-4 border-dashed border-amber-400 bg-white/95 p-8 text-center shadow-2xl drop-active">
+      <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 text-3xl">
+        𓃥
+      </div>
+      <h3 class="text-xl font-bold text-stone-800">放開以替換立體框內的白六模型</h3>
+      <p class="mt-2 text-sm text-stone-500">將自動縮放並置中於上方展示框內，完全不碰觸框壁</p>
+    </div>
+  </div>
+
+  <!-- Toast Notification Stack (Zero alert() usage) -->
+  <div id="toast-container" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex flex-col items-center gap-2 w-full max-w-sm px-4"></div>
+
+  <!-- Floating Restore Button (Visible ONLY when UI is collapsed) -->
+  <button id="btn-expand-ui" type="button" title="展開所有介面 (快捷鍵 H)" class="fixed top-4 right-4 z-40 hidden items-center gap-1.5 rounded-full bg-stone-900/65 hover:bg-stone-900/85 border border-white/25 px-3.5 py-2 text-xs font-semibold text-white backdrop-blur-md shadow-lg active:scale-95 transition">
+    <svg class="h-3.5 w-3.5 text-amber-300" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+    </svg>
+    <span>展開介面</span>
+  </button>
+
+  <!-- Top Header Overlay -->
+  <header id="ui-header" class="fixed top-0 left-0 right-0 z-20 p-3 sm:p-4 pointer-events-none">
+    <div class="mx-auto max-w-6xl flex flex-wrap items-center justify-between gap-2">
+      <!-- Title & Live Status Card -->
+      <div class="glass-panel pointer-events-auto flex items-center gap-3 rounded-2xl px-3.5 py-2.5">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-600 to-rose-800 text-white shadow-md text-lg font-bold">
+          𓃥
+        </div>
+        <div>
+          <div class="flex flex-wrap items-center gap-2">
+            <h1 class="text-xs sm:text-base font-extrabold text-stone-800 leading-tight">
+              𓃥 白六立體週曆 (2026年 11月 15日 週日 – 11月 21日 週六)
+            </h1>
+            <span id="status-badge" class="rounded-full bg-emerald-100 border border-emerald-400/60 px-2.5 py-0.5 text-[10px] sm:text-[11px] font-bold text-emerald-800">
+              ● 今日：11/15 (週日)
+            </span>
+          </div>
+          <p id="model-stats" class="text-[11px] sm:text-xs text-stone-600 mt-0.5">正在初始化 3D 立體框與週曆網格...</p>
+        </div>
+      </div>
+
+      <!-- Primary Actions -->
+      <div class="pointer-events-auto flex flex-wrap items-center gap-1.5 sm:gap-2">
+        <button id="btn-collapse-ui" type="button" title="收合所有介面，只顯示 3D 模型 (快捷鍵 H)" class="glass-panel flex items-center gap-1.5 rounded-2xl px-3 py-2.5 text-xs sm:text-sm font-semibold text-stone-700 hover:bg-white active:scale-95 transition">
+          <svg class="h-4 w-4 text-stone-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+          </svg>
+          <span>收合介面</span>
+        </button>
+
+        <label for="glb-file-input" class="glass-panel cursor-pointer flex items-center gap-1.5 rounded-2xl px-3 py-2.5 text-xs sm:text-sm font-semibold text-stone-700 hover:bg-white active:scale-95 transition">
+          <svg class="h-4 w-4 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          <span>匯入白六 .glb</span>
+        </label>
+        <input id="glb-file-input" type="file" accept=".glb,.gltf" class="hidden" />
+
+        <button id="btn-restore-bailiu" type="button" class="hidden glass-panel items-center gap-1 rounded-2xl px-3 py-2.5 text-xs sm:text-sm font-semibold text-emerald-700 hover:bg-white active:scale-95 transition">
+          <span>恢復內建白六</span>
+        </button>
+
+        <button id="btn-export-glb" type="button" class="flex items-center gap-1.5 rounded-2xl bg-gradient-to-r from-amber-600 via-orange-600 to-rose-700 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-amber-800/30 hover:from-amber-500 hover:to-rose-600 active:scale-95 transition">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          <span>下載立體週曆 .glb</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Bottom Control Dock -->
+  <footer id="ui-footer" class="fixed bottom-0 left-0 right-0 z-20 p-3 sm:p-4 pointer-events-none">
+    <div class="mx-auto max-w-5xl flex flex-col items-center gap-2">
+      <!-- Interaction Hint -->
+      <div class="rounded-full bg-stone-900/70 border border-white/15 px-3.5 py-1 text-[11px] text-white backdrop-blur-md">
+        點擊下方「日期方塊」可切換凸起標註 · 拖曳 360° 旋轉檢視 · 按 H 鍵一鍵隱藏介面
+      </div>
+
+      <!-- Camera Presets Bar -->
+      <div class="glass-panel pointer-events-auto flex flex-wrap items-center justify-center gap-1.5 rounded-2xl p-1.5">
+        <span class="px-2 text-[11px] font-bold text-stone-600">視角切換：</span>
+        <button data-cam="frontThreeQuarter" class="cam-btn rounded-xl px-2.5 py-1 text-xs font-semibold bg-amber-500 text-stone-950 shadow-sm transition">
+          45°立體全覽
+        </button>
+        <button data-cam="frontStraight" class="cam-btn rounded-xl px-2.5 py-1 text-xs font-semibold text-stone-600 hover:text-stone-900 transition">
+          正面展示視角
+        </button>
+        <button data-cam="calendarCloseup" class="cam-btn rounded-xl px-2.5 py-1 text-xs font-semibold text-stone-600 hover:text-stone-900 transition">
+          特寫本週日期
+        </button>
+        <button data-cam="bailiuCloseup" class="cam-btn rounded-xl px-2.5 py-1 text-xs font-semibold text-stone-600 hover:text-stone-900 transition">
+          特寫白六與立耳
+        </button>
+      </div>
+
+      <!-- Frame Material Finish & Animation Controls -->
+      <div class="glass-panel pointer-events-auto w-full rounded-3xl p-2 sm:p-2.5 flex flex-wrap items-center justify-between gap-2">
+        <!-- 3 Frame Finishes: Walnut Wood / Matte Black / White Oak -->
+        <div class="flex items-center gap-1 bg-stone-200/85 p-1 rounded-2xl" role="group" aria-label="立體框材質切換">
+          <button data-finish="walnut" class="finish-btn rounded-xl px-2.5 py-1.5 text-xs font-semibold bg-amber-700 text-white shadow-sm transition">
+            🪵 胡桃深木
+          </button>
+          <button data-finish="matteBlack" class="finish-btn rounded-xl px-2.5 py-1.5 text-xs font-semibold text-stone-600 hover:text-stone-900 transition">
+            🖤 霧面黑框
+          </button>
+          <button data-finish="whiteOak" class="finish-btn rounded-xl px-2.5 py-1.5 text-xs font-semibold text-stone-600 hover:text-stone-900 transition">
+            🌾 北歐白橡木
+          </button>
+        </div>
+
+        <!-- Animation, Wireframe & Auto-Rotate Toggles -->
+        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <button id="btn-anim" type="button" class="flex items-center gap-1.5 rounded-2xl bg-rose-700 px-3 py-2 text-xs font-semibold text-white shadow-sm active:scale-95 transition">
+            <span>🐾</span>
+            <span>呼吸搖尾</span>
+          </button>
+
+          <button id="btn-wireframe" type="button" class="flex items-center gap-1.5 rounded-2xl bg-stone-100 hover:bg-stone-200/80 px-3 py-2 text-xs font-semibold text-stone-700 active:scale-95 transition">
+            <svg class="h-3.5 w-3.5 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+              <line x1="12" y1="22.08" x2="12" y2="12" />
+            </svg>
+            <span>網格檢視</span>
+          </button>
+
+          <button id="btn-autorotate" type="button" class="flex items-center gap-1.5 rounded-2xl bg-teal-700 px-3 py-2 text-xs font-semibold text-white shadow-sm active:scale-95 transition">
+            <svg id="icon-autorotate" class="h-3.5 w-3.5 animate-spin" style="animation-duration: 11s;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>自動旋轉</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    // =========================================================================
+    // 1. Toast Notification Helper (Zero alert() usage)
+    // =========================================================================
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      const toast = document.createElement('div');
+      const styles = {
+        info: 'bg-stone-800/95 text-white border-stone-600',
+        success: 'bg-emerald-600/95 text-white border-emerald-400',
+        error: 'bg-rose-600/95 text-white border-rose-400'
+      };
+      toast.className = `rounded-2xl border px-4 py-2.5 text-xs sm:text-sm font-medium shadow-2xl backdrop-blur-md transition-all duration-300 ${styles[type] || styles.info}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-8px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 3200);
+    }
+
+    // =========================================================================
+    // 2. Three.js Scene, Renderer, Camera & Three-Point Solid Light Rig
+    // =========================================================================
+    const container = document.getElementById('canvas-container');
+    const initWidth = container.clientWidth || window.innerWidth || 1024;
+    const initHeight = container.clientHeight || window.innerHeight || 768;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#EAE6DF');
+
+    const camera = new THREE.PerspectiveCamera(38, initWidth / initHeight, 0.1, 150);
+
+    // Tall Shadow-Box total height = ~4.55 units, centered visually around y = 2.30
+    const CAMERA_PRESETS = {
+      frontThreeQuarter: { pos: new THREE.Vector3(3.35, 3.15, 7.65), target: new THREE.Vector3(0, 2.30, 0.08) },
+      frontStraight:     { pos: new THREE.Vector3(0.00, 2.50, 8.35), target: new THREE.Vector3(0, 2.30, 0.08) },
+      calendarCloseup:   { pos: new THREE.Vector3(0.00, 1.50, 4.05), target: new THREE.Vector3(0, 0.72, 0.45) },
+      bailiuCloseup:     { pos: new THREE.Vector3(2.10, 3.25, 4.45), target: new THREE.Vector3(0, 2.75, 0.15) }
+    };
+
+    camera.position.copy(CAMERA_PRESETS.frontThreeQuarter.pos);
+
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      powerPreference: 'high-performance'
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(initWidth, initHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+    container.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.copy(CAMERA_PRESETS.frontThreeQuarter.target);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.minDistance = 2.4;
+    controls.maxDistance = 18;
+    controls.maxPolarAngle = Math.PI * 0.495;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.55;
+    controls.update();
+
+    // Three-point lighting + shadows (no external environment map required)
+    const hemiLight = new THREE.HemisphereLight('#FFFDF8', '#8C7A6B', 1.38);
+    hemiLight.position.set(0, 16, 0);
+    scene.add(hemiLight);
+
+    const keyLight = new THREE.DirectionalLight('#FFF7E8', 2.25);
+    keyLight.position.set(5.5, 10.0, 7.5);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.width = 2048;
+    keyLight.shadow.mapSize.height = 2048;
+    keyLight.shadow.camera.near = 1;
+    keyLight.shadow.camera.far = 26;
+    const d = 4.5;
+    keyLight.shadow.camera.left = -d;
+    keyLight.shadow.camera.right = d;
+    keyLight.shadow.camera.top = d;
+    keyLight.shadow.camera.bottom = -d;
+    keyLight.shadow.bias = -0.0005;
+    scene.add(keyLight);
+
+    const frontFillLight = new THREE.DirectionalLight('#FFFBEB', 0.85);
+    frontFillLight.position.set(-3.5, 4.2, 7.0);
+    scene.add(frontFillLight);
+
+    const rimLight = new THREE.DirectionalLight('#FDE68A', 0.95);
+    rimLight.position.set(-5.5, 6.8, -5.0);
+    scene.add(rimLight);
+
+    // Subtle ground contact shadow receiver (excluded from GLB export)
+    const groundShadowDisc = new THREE.Mesh(
+      new THREE.CircleGeometry(8.5, 48),
+      new THREE.ShadowMaterial({ opacity: 0.22 })
+    );
+    groundShadowDisc.rotation.x = -Math.PI / 2;
+    groundShadowDisc.position.y = -0.002;
+    groundShadowDisc.receiveShadow = true;
+    scene.add(groundShadowDisc);
+
+    // =========================================================================
+    // 3. This Week's Calendar Data (2026/11/15 週日 – 2026/11/21 週六)
+    // =========================================================================
+    const WEEK_DAYS = [
+      { year: 2026, month: 11, day: 15, dateStr: '11/15', zhWeek: '週日', enWeek: 'SUN', isWeekend: true,  isSunday: true,  isToday: true  },
+      { year: 2026, month: 11, day: 16, dateStr: '11/16', zhWeek: '週一', enWeek: 'MON', isWeekend: false, isSunday: false, isToday: false },
+      { year: 2026, month: 11, day: 17, dateStr: '11/17', zhWeek: '週二', enWeek: 'TUE', isWeekend: false, isSunday: false, isToday: false },
+      { year: 2026, month: 11, day: 18, dateStr: '11/18', zhWeek: '週三', enWeek: 'WED', isWeekend: false, isSunday: false, isToday: false },
+      { year: 2026, month: 11, day: 19, dateStr: '11/19', zhWeek: '週四', enWeek: 'THU', isWeekend: false, isSunday: false, isToday: false },
+      { year: 2026, month: 11, day: 20, dateStr: '11/20', zhWeek: '週五', enWeek: 'FRI', isWeekend: false, isSunday: false, isToday: false },
+      { year: 2026, month: 11, day: 21, dateStr: '11/21', zhWeek: '週六', enWeek: 'SAT', isWeekend: true,  isSunday: false, isToday: false }
+    ];
+
+    let activeDayNum = 15; // Default highlighted: Today 11/15 週日
+
+    // =========================================================================
+    // 4. Procedural CanvasTextures (All SRGBColorSpace & Embedded in .glb)
+    // =========================================================================
+
+    function createFrameFinishTexture(mode) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+
+      if (mode === 'matteBlack') {
+        // Sleek satin-matte charcoal black finish with subtle anodized micro-grain
+        ctx.fillStyle = '#232528';
+        ctx.fillRect(0, 0, 512, 512);
+        for (let i = 0; i < 2400; i++) {
+          const x = (i * 89) % 512;
+          const y = (i * 131) % 512;
+          ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.08)';
+          ctx.fillRect(x, y, 2, 2);
+        }
+      } else {
+        const isWhiteOak = mode === 'whiteOak';
+        const baseHex = isWhiteOak ? '#D9C5A8' : '#5C3A21';
+        const grainHex = isWhiteOak ? '#BFA786' : '#3D2412';
+        const knotHex = isWhiteOak ? '#A68C69' : '#2A170A';
+
+        ctx.fillStyle = baseHex;
+        ctx.fillRect(0, 0, 512, 512);
+
+        ctx.strokeStyle = grainHex;
+        ctx.lineWidth = 3;
+        for (let y = 0; y < 512; y += 8) {
+          ctx.beginPath();
+          for (let x = 0; x <= 512; x += 16) {
+            const offset = Math.sin(x * 0.02 + y * 0.05) * 3.5;
+            if (x === 0) ctx.moveTo(x, y + offset);
+            else ctx.lineTo(x, y + offset);
+          }
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = knotHex;
+        ctx.globalAlpha = 0.14;
+        for (let i = 0; i < 18; i++) {
+          const kx = (i * 97) % 512;
+          const ky = (i * 151) % 512;
+          ctx.beginPath();
+          ctx.ellipse(kx, ky, 36, 5, 0.08, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1.0;
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.needsUpdate = true;
+      return tex;
+    }
+
+    function createShadowBoxBackdropTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+
+      const grad = ctx.createLinearGradient(0, 0, 0, 512);
+      grad.addColorStop(0, '#F6EFE2');
+      grad.addColorStop(0.65, '#EDE2CE');
+      grad.addColorStop(1, '#DFCFAE');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 512, 512);
+
+      // Decorative arch silhouette inside upper display chamber
+      ctx.fillStyle = 'rgba(217, 164, 65, 0.15)';
+      ctx.beginPath();
+      ctx.arc(256, 235, 168, Math.PI, 0);
+      ctx.lineTo(424, 472);
+      ctx.lineTo(88, 472);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(184, 130, 40, 0.35)';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(20, 20, 472, 472);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.needsUpdate = true;
+      return tex;
+    }
+
+    function createCalendarHeaderTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 144;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#FDF8EE';
+      ctx.fillRect(0, 0, 1024, 144);
+
+      ctx.strokeStyle = '#C8963E';
+      ctx.lineWidth = 8;
+      ctx.strokeRect(6, 6, 1012, 132);
+
+      ctx.fillStyle = '#5A381E';
+      ctx.font = '800 36px "Inter", "Noto Sans TC", sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('2026 年 11 月  NOVEMBER', 34, 74);
+
+      ctx.fillStyle = '#8E1B2B';
+      ctx.font = '900 36px "Noto Sans TC", "Inter", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('𓃥 白六立體週曆', 575, 74);
+
+      ctx.fillStyle = '#1E545E';
+      ctx.beginPath();
+      ctx.roundRect(775, 34, 214, 76, 18);
+      ctx.fill();
+
+      ctx.fillStyle = '#FFFDF9';
+      ctx.font = '700 30px "Inter", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('11/15 – 11/21', 882, 74);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.needsUpdate = true;
+      return tex;
+    }
+
+    /**
+     * Crisp 3D calendar day block face texture showing date (11/15..11/21) & weekday (週日..週六)
+     * Today / Active day features a raised burgundy-and-gold badge aesthetic.
+     */
+    function createDayTileTexture(dayInfo, isActive) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 384;
+      const ctx = canvas.getContext('2d');
+
+      if (isActive) {
+        // Burgundy & Gold Highlighted Badge Card
+        const grad = ctx.createLinearGradient(0, 0, 0, 384);
+        grad.addColorStop(0, '#991B2D');
+        grad.addColorStop(1, '#6B101D');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 256, 384);
+
+        // Golden header band
+        ctx.fillStyle = '#E5AE3C';
+        ctx.fillRect(0, 0, 256, 86);
+
+        // Outer & inner metallic gold border
+        ctx.strokeStyle = '#F6D365';
+        ctx.lineWidth = 10;
+        ctx.strokeRect(8, 8, 240, 368);
+
+        // English weekday
+        ctx.fillStyle = '#4A2B08';
+        ctx.font = '900 32px "Inter", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(dayInfo.enWeek, 128, 45);
+
+        // Date string (e.g., 11/15)
+        ctx.fillStyle = '#FFFDF9';
+        ctx.font = '900 72px "Inter", sans-serif';
+        ctx.fillText(dayInfo.dateStr, 128, 178);
+
+        // Chinese weekday (e.g., 週日)
+        ctx.fillStyle = '#FDE68A';
+        ctx.font = '900 44px "Noto Sans TC", sans-serif';
+        ctx.fillText(dayInfo.zhWeek, 128, 268);
+
+        // Raised-style golden pill badge ("TODAY · 今日")
+        ctx.fillStyle = '#E5AE3C';
+        ctx.beginPath();
+        ctx.roundRect(42, 314, 172, 42, 21);
+        ctx.fill();
+
+        ctx.fillStyle = '#3B1F06';
+        ctx.font = '800 22px "Noto Sans TC", "Inter", sans-serif';
+        ctx.fillText(dayInfo.isToday ? '★ 今日 TODAY' : '★ 已選取', 128, 336);
+      } else {
+        // Clean Warm Ivory Block Card
+        ctx.fillStyle = '#FCF9F2';
+        ctx.fillRect(0, 0, 256, 384);
+
+        ctx.fillStyle = dayInfo.isWeekend ? '#B91C1C' : '#1E545E';
+        ctx.fillRect(0, 0, 256, 84);
+
+        ctx.strokeStyle = '#D6CBB8';
+        ctx.lineWidth = 8;
+        ctx.strokeRect(4, 4, 248, 376);
+
+        ctx.fillStyle = '#FFFDF9';
+        ctx.font = '800 30px "Inter", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(dayInfo.enWeek, 128, 44);
+
+        ctx.fillStyle = dayInfo.isSunday ? '#991B1B' : '#292524';
+        ctx.font = '900 68px "Inter", sans-serif';
+        ctx.fillText(dayInfo.dateStr, 128, 182);
+
+        ctx.fillStyle = dayInfo.isWeekend ? '#B91C1C' : '#57534E';
+        ctx.font = '800 42px "Noto Sans TC", sans-serif';
+        ctx.fillText(dayInfo.zhWeek, 128, 276);
+
+        // Subtle paw stamp watermark
+        ctx.fillStyle = 'rgba(180, 165, 142, 0.32)';
+        ctx.font = '700 24px "Noto Sans TC", sans-serif';
+        ctx.fillText('𓃥 白六週曆', 128, 342);
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.needsUpdate = true;
+      return tex;
+    }
+
+    /**
+     * Solid opaque warm off-white / ivory-gray fur gradient texture (#EBE6DD -> #DFD8CC)
+     */
+    function createIvoryGrayFurTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+
+      const grad = ctx.createLinearGradient(0, 0, 512, 512);
+      grad.addColorStop(0.0, '#F3EFE8'); // Soft bright ivory chest highlight
+      grad.addColorStop(0.45, '#EBE6DD'); // Warm off-white / ivory-gray main coat
+      grad.addColorStop(1.0, '#DFD8CC'); // Warm ash-ivory dorsal shading
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 512, 512);
+
+      for (let i = 0; i < 2600; i++) {
+        const x = (i * 73) % 512;
+        const y = (i * 139 + Math.floor(i / 7)) % 512;
+        ctx.fillStyle = i % 2 === 0 ? 'rgba(255, 253, 249, 0.16)' : 'rgba(176, 166, 150, 0.12)';
+        ctx.fillRect(x, y, 2, 3);
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.needsUpdate = true;
+      return tex;
+    }
+
+    /**
+     * Burgundy red Ruffwear collar webbing with white mountain patch
+     */
+    function createRuffwearCollarTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 192;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#1C191A';
+      ctx.fillRect(0, 0, 1024, 192);
+
+      ctx.fillStyle = '#8E1B2B';
+      ctx.fillRect(0, 22, 1024, 148);
+
+      ctx.strokeStyle = '#560D17';
+      ctx.lineWidth = 6;
+      for (let wave = 0; wave < 4; wave++) {
+        ctx.beginPath();
+        for (let x = 0; x <= 1024; x += 16) {
+          const y = 44 + wave * 28 + Math.sin(x * 0.035 + wave * 1.4) * 10;
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+
+      const patchX = 240;
+      const patchY = 44;
+      const patchW = 246;
+      const patchH = 104;
+
+      ctx.fillStyle = '#FFFDF9';
+      ctx.beginPath();
+      ctx.roundRect(patchX, patchY, patchW, patchH, 10);
+      ctx.fill();
+      ctx.strokeStyle = '#1C191A';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      ctx.fillStyle = '#D97706';
+      ctx.fillRect(patchX + 16, patchY + 22, 36, 60);
+      ctx.fillStyle = '#FFFDF9';
+      ctx.beginPath();
+      ctx.moveTo(patchX + 20, patchY + 72);
+      ctx.lineTo(patchX + 34, patchY + 34);
+      ctx.lineTo(patchX + 48, patchY + 72);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#1C191A';
+      ctx.font = '800 28px "Inter", Arial, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('RUFFWEAR', patchX + 62, patchY + 54);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.needsUpdate = true;
+      return tex;
+    }
+
+    // =========================================================================
+    // 5. Unified Seamless Lofted Torso-to-Neck Bai Liu 3D Figurine Builder
+    // =========================================================================
+    function smoothstep(edge0, edge1, x) {
+      const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+      return t * t * (3 - 2 * t);
+    }
+
+    function gaussian(x, mu, sigma) {
+      const d = (x - mu) / sigma;
+      return Math.exp(-0.5 * d * d);
+    }
+
+    function evaluateAnatomySection(u) {
+      const u2 = u * u;
+      const u3 = u2 * u;
+      const inv = 1 - u;
+      const inv2 = inv * inv;
+      const inv3 = inv2 * inv;
+
+      const cx =
+        inv3 * -0.36 +
+        3 * inv2 * u * -0.10 +
+        3 * inv * u2 * 0.29 +
+        u3 * 0.36;
+
+      const cy =
+        inv3 * 0.20 +
+        3 * inv2 * u * 0.76 +
+        3 * inv * u2 * 1.36 +
+        u3 * 1.98;
+
+      const baseRx =
+        0.54 * (1 - smoothstep(0.0, 0.72, u)) +
+        0.30 * smoothstep(0.0, 0.72, u) +
+        0.035 * smoothstep(0.82, 1.0, u);
+
+      const baseRz =
+        0.51 * (1 - smoothstep(0.0, 0.74, u)) +
+        0.275 * smoothstep(0.0, 0.74, u) +
+        0.030 * smoothstep(0.82, 1.0, u);
+
+      const chestForwardBulge = 0.14 * gaussian(u, 0.42, 0.13);
+      const throatDewlapCurve = 0.055 * gaussian(u, 0.64, 0.11);
+      const withersDorsalSlope = 0.11 * gaussian(u, 0.54, 0.14);
+      const occiputBackCurve = 0.045 * gaussian(u, 0.92, 0.08);
+      const scapulaLateralMuscle = 0.065 * gaussian(u, 0.48, 0.12);
+      const collarSeatIndent = -0.011 * gaussian(u, 0.74, 0.026);
+
+      let domeScale = 1.0;
+      if (u < 0.05) {
+        const t = u / 0.05;
+        domeScale = Math.sqrt(Math.max(0.001, 1 - (1 - t) * (1 - t)));
+      } else if (u > 0.94) {
+        const t = (1.0 - u) / 0.06;
+        domeScale = Math.sqrt(Math.max(0.001, 1 - (1 - t) * (1 - t) * 0.75));
+      }
+
+      return {
+        cx,
+        cy,
+        rx: (baseRx + collarSeatIndent) * domeScale,
+        rz: (baseRz + scapulaLateralMuscle + collarSeatIndent) * domeScale,
+        chestForwardBulge: (chestForwardBulge + throatDewlapCurve) * domeScale,
+        withersDorsalSlope: (withersDorsalSlope + occiputBackCurve) * domeScale
+      };
+    }
+
+    function createUnifiedTorsoNeckGeometry(uSteps = 64, vSteps = 48) {
+      const geometry = new THREE.BufferGeometry();
+      const positions = [];
+      const uvs = [];
+      const indices = [];
+
+      const sections = [];
+      for (let i = 0; i <= uSteps; i++) {
+        const u = i / uSteps;
+        sections.push({ u, ...evaluateAnatomySection(u) });
+      }
+
+      for (let i = 0; i <= uSteps; i++) {
+        const s = sections[i];
+        const prev = sections[Math.max(0, i - 1)];
+        const next = sections[Math.min(uSteps, i + 1)];
+
+        const tx = next.cx - prev.cx;
+        const ty = next.cy - prev.cy;
+        const tLen = Math.hypot(tx, ty) || 1;
+        const nx = ty / tLen;
+        const ny = -tx / tLen;
+        const tiltWeight = 0.52 * Math.sin(Math.PI * Math.pow(s.u, 0.85));
+
+        for (let j = 0; j <= vSteps; j++) {
+          const v = j / vSteps;
+          const theta = v * Math.PI * 2;
+          const cosT = Math.cos(theta);
+          const sinT = Math.sin(theta);
+
+          const frontWeight = Math.max(0, cosT);
+          const backWeight = Math.max(0, -cosT);
+          const sideWeight = Math.abs(sinT);
+
+          const chestBroadening = 0.032 * Math.pow(frontWeight, 2) * gaussian(s.u, 0.44, 0.14);
+          const shoulderContour = 0.028 * Math.pow(sideWeight, 2) * Math.pow(backWeight, 0.5) * gaussian(s.u, 0.50, 0.12);
+
+          const localX =
+            cosT * (s.rx + chestBroadening) +
+            Math.pow(frontWeight, 1.6) * s.chestForwardBulge -
+            Math.pow(backWeight, 1.5) * s.withersDorsalSlope;
+
+          const localZ = sinT * (s.rz + shoulderContour);
+
+          const worldX = s.cx + localX * (1 - tiltWeight + tiltWeight * nx);
+          const worldY = s.cy + localX * (tiltWeight * ny);
+          const worldZ = localZ;
+
+          positions.push(worldX, worldY, worldZ);
+          uvs.push(0.5 + 0.5 * cosT, s.u);
+        }
+      }
+
+      const ringStride = vSteps + 1;
+      for (let i = 0; i < uSteps; i++) {
+        for (let j = 0; j < vSteps; j++) {
+          const a = i * ringStride + j;
+          const b = (i + 1) * ringStride + j;
+          const c = (i + 1) * ringStride + (j + 1);
+          const dIdx = i * ringStride + (j + 1);
+
+          indices.push(a, dIdx, b);
+          indices.push(b, dIdx, c);
+        }
+      }
+
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+      geometry.setIndex(indices);
+      geometry.computeVertexNormals();
+      return geometry;
+    }
+
+    function sampleNeckRingTransform(uTarget = 0.74) {
+      const eps = 0.005;
+      const s = evaluateAnatomySection(uTarget);
+      const prev = evaluateAnatomySection(uTarget - eps);
+      const next = evaluateAnatomySection(uTarget + eps);
+
+      const tx = next.cx - prev.cx;
+      const ty = next.cy - prev.cy;
+      const tLen = Math.hypot(tx, ty) || 1;
+      const nx = ty / tLen;
+      const ny = -tx / tLen;
+      const tiltWeight = 0.52 * Math.sin(Math.PI * Math.pow(uTarget, 0.85));
+
+      const frontLocalX = s.rx + s.chestForwardBulge;
+      const backLocalX = -(s.rx + s.withersDorsalSlope);
+
+      const frontX = s.cx + frontLocalX * (1 - tiltWeight + tiltWeight * nx);
+      const frontY = s.cy + frontLocalX * (tiltWeight * ny);
+
+      const backX = s.cx + backLocalX * (1 - tiltWeight + tiltWeight * nx);
+      const backY = s.cy + backLocalX * (tiltWeight * ny);
+
+      const centerX = (frontX + backX) * 0.5;
+      const centerY = (frontY + backY) * 0.5;
+      const radiusX = Math.hypot(frontX - backX, frontY - backY) * 0.5;
+      const radiusZ = s.rz;
+      const tiltAngleZ = Math.atan2(frontY - backY, frontX - backX);
+
+      return { centerX, centerY, radiusX, radiusZ, tiltAngleZ };
+    }
+
+    function createCartoonPaw(matFur, matBeigeGray, matClaw, scale = 1.0) {
+      const paw = new THREE.Group();
+      const basePad = new THREE.Mesh(
+        new THREE.SphereGeometry(0.142 * scale, 16, 12),
+        matFur
+      );
+      basePad.scale.set(1.25, 0.72, 1.05);
+      basePad.position.set(0.02 * scale, 0.082 * scale, 0);
+      basePad.castShadow = true;
+      paw.add(basePad);
+
+      const toeConfigs = [
+        { x: 0.14, z: -0.092, r: 0.055, splay: -0.18 },
+        { x: 0.162, z: -0.031, r: 0.060, splay: -0.05 },
+        { x: 0.162, z: 0.031, r: 0.060, splay: 0.05 },
+        { x: 0.14, z: 0.092, r: 0.055, splay: 0.18 }
+      ];
+
+      toeConfigs.forEach((tc) => {
+        const toeGroup = new THREE.Group();
+        toeGroup.position.set(tc.x * scale, 0.060 * scale, tc.z * scale);
+        toeGroup.rotation.y = tc.splay;
+
+        const toeMesh = new THREE.Mesh(
+          new THREE.SphereGeometry(tc.r * scale, 12, 10),
+          matBeigeGray
+        );
+        toeMesh.scale.set(1.32, 0.85, 0.92);
+        toeGroup.add(toeMesh);
+
+        const claw = new THREE.Mesh(
+          new THREE.ConeGeometry(0.016 * scale, 0.050 * scale, 8),
+          matClaw
+        );
+        claw.rotation.z = -Math.PI * 0.42;
+        claw.position.set(tc.r * 1.24 * scale, -0.012 * scale, 0);
+        toeGroup.add(claw);
+
+        paw.add(toeGroup);
+      });
+      return paw;
+    }
+
+    let animParts = {
+      upperBodyGroup: null,
+      headGroup: null,
+      tailGroup: null,
+      tagGroup: null
+    };
+
+    function buildEmbeddedBaiLiuFigurine() {
+      const root = new THREE.Group();
+      root.name = 'BaiLiu_Figurine_SolidIvoryGray';
+
+      // Solid opaque warm off-white / ivory-gray fur material (transparent: false, opacity: 1.0)
+      const furTex = createIvoryGrayFurTexture();
+      const matFurMain = new THREE.MeshStandardMaterial({
+        map: furTex,
+        color: '#FFFFFF',
+        roughness: 0.62,
+        metalness: 0.01,
+        transparent: false,
+        opacity: 1.0,
+        side: THREE.DoubleSide
+      });
+      const matFurIvory = new THREE.MeshStandardMaterial({
+        color: '#EBE6DD',
+        roughness: 0.62,
+        metalness: 0.01,
+        transparent: false,
+        opacity: 1.0,
+        side: THREE.DoubleSide
+      });
+      // #D0C7B9 warm beige-gray ear backs & snout accents
+      const matBeigeGrayEar = new THREE.MeshStandardMaterial({
+        color: '#D0C7B9',
+        roughness: 0.64,
+        metalness: 0.01,
+        transparent: false,
+        opacity: 1.0,
+        side: THREE.DoubleSide
+      });
+      const matInnerEar = new THREE.MeshStandardMaterial({
+        color: '#E5C6B8',
+        roughness: 0.65,
+        transparent: false,
+        opacity: 1.0,
+        side: THREE.DoubleSide
+      });
+      const matNose = new THREE.MeshStandardMaterial({
+        color: '#2B1E1A',
+        roughness: 0.25,
+        transparent: false,
+        opacity: 1.0
+      });
+      const matEye = new THREE.MeshStandardMaterial({
+        color: '#1A1412',
+        roughness: 0.12,
+        transparent: false,
+        opacity: 1.0
+      });
+      const matEyeHighlight = new THREE.MeshBasicMaterial({
+        color: '#FFFFFF',
+        transparent: false,
+        opacity: 1.0
+      });
+      const matClaw = new THREE.MeshStandardMaterial({
+        color: '#3D291A',
+        roughness: 0.45,
+        transparent: false,
+        opacity: 1.0
+      });
+
+      // Deep teal-green cushion inside the upper shadow-box chamber
+      const cushionMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.18, 1.24, 0.24, 48),
+        new THREE.MeshStandardMaterial({
+          color: '#1E545E',
+          roughness: 0.78,
+          metalness: 0.04,
+          transparent: false,
+          opacity: 1.0
+        })
+      );
+      cushionMesh.scale.set(1.15, 1.0, 0.85);
+      cushionMesh.position.y = 0.12;
+      cushionMesh.castShadow = true;
+      cushionMesh.receiveShadow = true;
+      root.add(cushionMesh);
+
+      const dogGroup = new THREE.Group();
+      dogGroup.position.set(-0.06, 0.23, 0);
+
+      // Unified seamless lofted torso-to-neck mesh
+      const unifiedBodyMesh = new THREE.Mesh(
+        createUnifiedTorsoNeckGeometry(64, 48),
+        matFurMain
+      );
+      unifiedBodyMesh.castShadow = true;
+      unifiedBodyMesh.receiveShadow = true;
+
+      const upperBodyGroup = new THREE.Group();
+      upperBodyGroup.add(unifiedBodyMesh);
+      animParts.upperBodyGroup = upperBodyGroup;
+
+      // Burgundy red Ruffwear collar with white mountain patch, silver D-ring & dark gunmetal ID tag
+      const neckFit = sampleNeckRingTransform(0.74);
+      const collarGroup = new THREE.Group();
+      collarGroup.position.set(neckFit.centerX, neckFit.centerY, 0);
+      collarGroup.rotation.z = neckFit.tiltAngleZ;
+
+      const collarBand = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.0, 1.03, 0.145, 44, 1, true),
+        new THREE.MeshStandardMaterial({
+          map: createRuffwearCollarTexture(),
+          side: THREE.DoubleSide,
+          roughness: 0.62,
+          transparent: false,
+          opacity: 1.0
+        })
+      );
+      collarBand.scale.set(neckFit.radiusX + 0.014, 1.0, neckFit.radiusZ + 0.014);
+      collarBand.rotation.y = -0.58;
+      collarGroup.add(collarBand);
+
+      const collarInnerRim = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.975, 1.005, 0.138, 40),
+        new THREE.MeshStandardMaterial({
+          color: '#1C191A',
+          roughness: 0.78,
+          transparent: false,
+          opacity: 1.0
+        })
+      );
+      collarInnerRim.scale.set(neckFit.radiusX + 0.008, 1.0, neckFit.radiusZ + 0.008);
+      collarGroup.add(collarInnerRim);
+
+      const matSilver = new THREE.MeshStandardMaterial({
+        color: '#D1D5DB',
+        roughness: 0.25,
+        metalness: 0.82,
+        transparent: false,
+        opacity: 1.0
+      });
+      const dRingAngle = 1.05;
+      const dRing = new THREE.Mesh(new THREE.TorusGeometry(0.044, 0.010, 10, 20), matSilver);
+      dRing.position.set(
+        Math.cos(dRingAngle) * (neckFit.radiusX + 0.028),
+        -0.01,
+        Math.sin(dRingAngle) * (neckFit.radiusZ + 0.028)
+      );
+      dRing.rotation.y = Math.PI / 2 - dRingAngle;
+      collarGroup.add(dRing);
+
+      const tagAngle = 1.48;
+      const tagPivot = new THREE.Group();
+      tagPivot.position.set(
+        Math.cos(tagAngle) * (neckFit.radiusX + 0.022),
+        -0.045,
+        Math.sin(tagAngle) * (neckFit.radiusZ + 0.022)
+      );
+      tagPivot.rotation.z = -neckFit.tiltAngleZ;
+
+      const idCoin = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.066, 0.066, 0.015, 22),
+        new THREE.MeshStandardMaterial({
+          color: '#33383F',
+          roughness: 0.35,
+          metalness: 0.65,
+          transparent: false,
+          opacity: 1.0
+        })
+      );
+      idCoin.rotation.x = Math.PI / 2;
+      idCoin.position.set(0, -0.092, 0.006);
+      tagPivot.add(idCoin);
+
+      collarGroup.add(tagPivot);
+      animParts.tagGroup = tagPivot;
+      upperBodyGroup.add(collarGroup);
+
+      // Head, Snout, Eyes & Tall Erect Pointed Ears
+      const headGroup = new THREE.Group();
+      headGroup.position.set(0.355, 1.96, 0);
+      headGroup.rotation.y = -0.22;
+      headGroup.rotation.z = 0.04;
+
+      const cranium = new THREE.Mesh(new THREE.SphereGeometry(0.328, 26, 20), matFurMain);
+      cranium.scale.set(1.13, 1.02, 0.96);
+      cranium.castShadow = true;
+      headGroup.add(cranium);
+
+      const muzzleUpper = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.115, 0.198, 0.38, 20),
+        matFurIvory
+      );
+      muzzleUpper.rotation.z = -Math.PI / 2 - 0.06;
+      muzzleUpper.position.set(0.36, -0.055, 0);
+      headGroup.add(muzzleUpper);
+
+      const snoutTip = new THREE.Mesh(new THREE.SphereGeometry(0.122, 16, 12), matBeigeGrayEar);
+      snoutTip.scale.set(1.05, 0.88, 0.95);
+      snoutTip.position.set(0.52, -0.068, 0);
+      headGroup.add(snoutTip);
+
+      const lowerJaw = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.08, 0.145, 0.31, 16),
+        matFurIvory
+      );
+      lowerJaw.rotation.z = -Math.PI / 2 + 0.06;
+      lowerJaw.position.set(0.33, -0.145, 0);
+      headGroup.add(lowerJaw);
+
+      const noseMesh = new THREE.Mesh(new THREE.SphereGeometry(0.056, 14, 12), matNose);
+      noseMesh.scale.set(0.85, 0.78, 1.15);
+      noseMesh.position.set(0.615, -0.032, 0);
+      headGroup.add(noseMesh);
+
+      [-1, 1].forEach((sz) => {
+        const eyePivot = new THREE.Group();
+        eyePivot.position.set(0.26, 0.065, sz * 0.168);
+        eyePivot.rotation.y = sz * -0.45;
+        eyePivot.rotation.z = -0.12;
+
+        const eyeball = new THREE.Mesh(new THREE.SphereGeometry(0.048, 16, 14), matEye);
+        eyeball.scale.set(0.75, 1.0, 1.0);
+        eyePivot.add(eyeball);
+
+        const catchlight = new THREE.Mesh(new THREE.SphereGeometry(0.014, 8, 8), matEyeHighlight);
+        catchlight.position.set(0.034, 0.018, sz * -0.014);
+        eyePivot.add(catchlight);
+
+        headGroup.add(eyePivot);
+
+        // Tall erect pointed Formosan dog ears
+        const earPivot = new THREE.Group();
+        earPivot.position.set(-0.06, 0.23, sz * 0.162);
+        earPivot.rotation.z = -0.14;
+        earPivot.rotation.x = sz * 0.16;
+        earPivot.rotation.y = sz * -0.22;
+
+        const outerEar = new THREE.Mesh(new THREE.ConeGeometry(0.148, 0.49, 16), matBeigeGrayEar);
+        outerEar.scale.set(0.62, 1.0, 1.05);
+        outerEar.position.set(0, 0.22, 0);
+        outerEar.castShadow = true;
+        earPivot.add(outerEar);
+
+        const innerEar = new THREE.Mesh(new THREE.ConeGeometry(0.095, 0.36, 14), matInnerEar);
+        innerEar.scale.set(0.45, 1.0, 0.92);
+        innerEar.position.set(0.036, 0.19, 0);
+        earPivot.add(innerEar);
+
+        headGroup.add(earPivot);
+      });
+
+      animParts.headGroup = headGroup;
+      upperBodyGroup.add(headGroup);
+      dogGroup.add(upperBodyGroup);
+
+      // Seated hind legs
+      [-0.45, 0.45].forEach((sideZ) => {
+        const thigh = new THREE.Mesh(new THREE.SphereGeometry(0.37, 18, 14), matFurMain);
+        thigh.scale.set(1.34, 0.86, 0.68);
+        thigh.position.set(-0.28, 0.34, sideZ);
+        thigh.rotation.z = -0.28;
+        thigh.castShadow = true;
+        dogGroup.add(thigh);
+
+        const hock = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.095, 0.115, 0.52, 14),
+          matFurIvory
+        );
+        hock.rotation.z = Math.PI / 2;
+        hock.position.set(-0.10, 0.10, sideZ * 1.04);
+        dogGroup.add(hock);
+
+        const hindPaw = createCartoonPaw(matFurIvory, matBeigeGrayEar, matClaw, 0.95);
+        hindPaw.position.set(0.16, 0.0, sideZ * 1.08);
+        dogGroup.add(hindPaw);
+      });
+
+      // Planted front legs
+      [-0.28, 0.28].forEach((sideZ) => {
+        const shoulderBlend = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 14), matFurMain);
+        shoulderBlend.scale.set(1.12, 1.32, 0.85);
+        shoulderBlend.position.set(0.26, 0.98, sideZ * 1.02);
+        shoulderBlend.rotation.z = -0.22;
+        dogGroup.add(shoulderBlend);
+
+        const pTop = new THREE.Vector3(0.33, 0.94, sideZ * 1.05);
+        const pBot = new THREE.Vector3(0.62, 0.09, sideZ * 1.02);
+        const legVec = new THREE.Vector3().subVectors(pBot, pTop);
+        const legMesh = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.118, 0.082, legVec.length(), 16),
+          matFurIvory
+        );
+        legMesh.position.copy(pTop).add(pBot).multiplyScalar(0.5);
+        legMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), legVec.normalize());
+        legMesh.castShadow = true;
+        dogGroup.add(legMesh);
+
+        const frontPaw = createCartoonPaw(matFurIvory, matBeigeGrayEar, matClaw, 1.02);
+        frontPaw.position.set(0.65, 0.0, sideZ * 1.02);
+        dogGroup.add(frontPaw);
+      });
+
+      // Curled tail
+      const tailPivot = new THREE.Group();
+      tailPivot.position.set(-0.80, 0.30, 0);
+      const tailCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(-0.24, -0.11, 0.04),
+        new THREE.Vector3(-0.42, -0.30, 0.10),
+        new THREE.Vector3(-0.34, -0.40, 0.16)
+      ]);
+      const tailTube = new THREE.Mesh(
+        new THREE.TubeGeometry(tailCurve, 20, 0.088, 12, false),
+        matFurMain
+      );
+      tailPivot.add(tailTube);
+
+      const tailTip = new THREE.Mesh(new THREE.SphereGeometry(0.098, 14, 12), matBeigeGrayEar);
+      tailTip.position.set(-0.33, -0.40, 0.16);
+      tailPivot.add(tailTip);
+
+      dogGroup.add(tailPivot);
+      animParts.tailGroup = tailPivot;
+
+      root.add(dogGroup);
+      return root;
+    }
+
+    // =========================================================================
+    // 6. Tall 3D Shadow-Box Display Frame & Lower Weekly Calendar Builder
+    // =========================================================================
+    let frameMaterial = new THREE.MeshStandardMaterial({
+      map: createFrameFinishTexture('walnut'),
+      roughness: 0.48,
+      metalness: 0.06
+    });
+
+    const brassMaterial = new THREE.MeshStandardMaterial({
+      color: '#DFA93E',
+      roughness: 0.28,
+      metalness: 0.78
+    });
+
+    let figurineHolderGroup = null;
+    let builtInBaiLiuGroup = null;
+    let calendarTilesGroup = null;
+    let interactiveDayMeshes = [];
+
+    // Upper chamber clear interior dimensions (clear height = 2.95 units >= 2.85 units requirement)
+    const UPPER_CHAMBER_CLEAR_HEIGHT = 2.95;
+    const UPPER_CHAMBER_CLEAR_WIDTH = 3.30;
+
+    function buildWeeklyCalendarDiorama() {
+      const root = new THREE.Group();
+      root.name = 'BaiLiu_WeeklyCalendar_2026W47';
+
+      const frameW = 3.80;
+      const frameH = 4.54; // Tall shadow-box height guaranteeing >= 2.95 units upper chamber clear height
+      const frameD = 1.56;
+      const wallT = 0.16;
+      const baseFootH = 0.16;
+
+      // Desk Stand Plinth
+      const deskPlinth = new THREE.Mesh(
+        new THREE.BoxGeometry(frameW + 0.28, baseFootH, frameD + 0.42),
+        frameMaterial
+      );
+      deskPlinth.position.set(0, baseFootH / 2, 0.06);
+      deskPlinth.castShadow = true;
+      deskPlinth.receiveShadow = true;
+      root.add(deskPlinth);
+
+      // Front brass trim
+      const frontBrassTrim = new THREE.Mesh(
+        new THREE.BoxGeometry(frameW + 0.12, 0.035, 0.03),
+        brassMaterial
+      );
+      frontBrassTrim.position.set(0, baseFootH + 0.015, (frameD + 0.42) / 2 + 0.05);
+      root.add(frontBrassTrim);
+
+      // Rear angled wooden easel kickstand
+      const rearSupport = new THREE.Mesh(
+        new THREE.BoxGeometry(1.15, 2.35, 0.14),
+        frameMaterial
+      );
+      rearSupport.position.set(0, 1.18, -frameD / 2 - 0.21);
+      rearSupport.rotation.x = 0.21;
+      rearSupport.castShadow = true;
+      root.add(rearSupport);
+
+      const Y_FRAME_BOT = baseFootH;
+      const frameGroup = new THREE.Group();
+      frameGroup.name = 'ShadowBoxFrame';
+
+      // Bottom rail
+      const botRail = new THREE.Mesh(new THREE.BoxGeometry(frameW, wallT, frameD), frameMaterial);
+      botRail.position.set(0, Y_FRAME_BOT + wallT / 2, 0);
+      botRail.castShadow = true;
+      botRail.receiveShadow = true;
+      frameGroup.add(botRail);
+
+      // Top crown rail
+      const topRailH = wallT + 0.04;
+      const topRail = new THREE.Mesh(new THREE.BoxGeometry(frameW + 0.08, topRailH, frameD + 0.06), frameMaterial);
+      topRail.position.set(0, Y_FRAME_BOT + frameH - topRailH / 2, 0.01);
+      topRail.castShadow = true;
+      topRail.receiveShadow = true;
+      frameGroup.add(topRail);
+
+      // Left & right side walls
+      [-1, 1].forEach((sx) => {
+        const sideWall = new THREE.Mesh(
+          new THREE.BoxGeometry(wallT, frameH - wallT * 2, frameD),
+          frameMaterial
+        );
+        sideWall.position.set(sx * (frameW / 2 - wallT / 2), Y_FRAME_BOT + frameH / 2, 0);
+        sideWall.castShadow = true;
+        sideWall.receiveShadow = true;
+        frameGroup.add(sideWall);
+      });
+
+      // Decorative brass corner brackets
+      [
+        [-frameW / 2 + 0.14, Y_FRAME_BOT + frameH - 0.14],
+        [frameW / 2 - 0.14, Y_FRAME_BOT + frameH - 0.14],
+        [-frameW / 2 + 0.14, Y_FRAME_BOT + 0.14],
+        [frameW / 2 - 0.14, Y_FRAME_BOT + 0.14]
+      ].forEach(([cx, cy]) => {
+        const bracket = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.24, 0.03), brassMaterial);
+        bracket.position.set(cx, cy, frameD / 2 + 0.01);
+        frameGroup.add(bracket);
+      });
+
+      // Recessed backing board
+      const backBoard = new THREE.Mesh(
+        new THREE.BoxGeometry(frameW - wallT * 1.8, frameH - wallT * 1.8, 0.08),
+        new THREE.MeshStandardMaterial({
+          map: createShadowBoxBackdropTexture(),
+          roughness: 0.78
+        })
+      );
+      backBoard.position.set(0, Y_FRAME_BOT + frameH / 2, -frameD / 2 + 0.06);
+      backBoard.receiveShadow = true;
+      frameGroup.add(backBoard);
+
+      // Horizontal middle divider shelf (dividerY = 1.33, top chamber inner ceiling = 4.50 -> 3.04 units clear height)
+      const dividerY = Y_FRAME_BOT + 1.17;
+      const midShelfH = 0.13;
+      const midShelf = new THREE.Mesh(
+        new THREE.BoxGeometry(frameW - wallT * 1.8, midShelfH, frameD - 0.08),
+        frameMaterial
+      );
+      midShelf.position.set(0, dividerY, 0.01);
+      midShelf.castShadow = true;
+      midShelf.receiveShadow = true;
+      frameGroup.add(midShelf);
+
+      // Header plaque on middle divider shelf
+      const headerPlaque = new THREE.Mesh(
+        new THREE.BoxGeometry(frameW - wallT * 2.1, 0.22, 0.04),
+        new THREE.MeshStandardMaterial({
+          map: createCalendarHeaderTexture(),
+          roughness: 0.35,
+          metalness: 0.12
+        })
+      );
+      headerPlaque.position.set(0, dividerY - 0.03, frameD / 2 - 0.01);
+      frameGroup.add(headerPlaque);
+
+      root.add(frameGroup);
+
+      // Upper Display Chamber: Seated Bailiu ("白六") with ample ear-tip clearance
+      figurineHolderGroup = new THREE.Group();
+      figurineHolderGroup.name = 'UpperChamber_BaiLiuHolder';
+      figurineHolderGroup.position.set(0, dividerY + midShelfH / 2, 0.05);
+
+      builtInBaiLiuGroup = buildEmbeddedBaiLiuFigurine();
+      // Scaled to 0.78 (~2.22 units tall) inside the 2.95+ unit tall chamber -> > 0.72 units headroom above ear tips!
+      builtInBaiLiuGroup.scale.setScalar(0.78);
+      builtInBaiLiuGroup.rotation.y = -0.42;
+      figurineHolderGroup.add(builtInBaiLiuGroup);
+
+      root.add(figurineHolderGroup);
+
+      // Lower Recessed Slot: 7 Beveled 3D Calendar Day Blocks
+      calendarTilesGroup = new THREE.Group();
+      calendarTilesGroup.name = 'LowerSlot_WeeklyCalendarBlocks';
+      calendarTilesGroup.position.set(0, Y_FRAME_BOT + wallT, 0.16);
+      root.add(calendarTilesGroup);
+
+      rebuildCalendarTiles();
+
+      return root;
+    }
+
+    function rebuildCalendarTiles() {
+      if (!calendarTilesGroup) return;
+      while (calendarTilesGroup.children.length > 0) {
+        calendarTilesGroup.remove(calendarTilesGroup.children[0]);
+      }
+      interactiveDayMeshes = [];
+
+      // Recessed tray rail
+      const trayBase = new THREE.Mesh(new THREE.BoxGeometry(3.32, 0.08, 0.96), frameMaterial);
+      trayBase.position.set(0, 0.04, 0.14);
+      trayBase.receiveShadow = true;
+      calendarTilesGroup.add(trayBase);
+
+      const tileW = 0.42;
+      const tileH = 0.68;
+      const tileD = 0.15;
+      const gap = 0.042;
+      const totalSpan = 7 * tileW + 6 * gap;
+      const startX = -totalSpan / 2 + tileW / 2;
+
+      const matTileSide = new THREE.MeshStandardMaterial({ color: '#E7DEC8', roughness: 0.55 });
+      const matTileActiveSide = new THREE.MeshStandardMaterial({ color: '#D99B26', roughness: 0.35, metalness: 0.45 });
+
+      WEEK_DAYS.forEach((dayInfo, idx) => {
+        const isActive = dayInfo.day === activeDayNum;
+        const tileGroup = new THREE.Group();
+        tileGroup.name = `CalendarBlock_${dayInfo.month}_${dayInfo.day}_${dayInfo.enWeek}`;
+
+        const xPos = startX + idx * (tileW + gap);
+        const yPos = 0.08 + tileH / 2 + (isActive ? 0.055 : 0);
+        const zPos = 0.34 + (isActive ? 0.11 : 0);
+
+        const frontTex = createDayTileTexture(dayInfo, isActive);
+        const matFront = new THREE.MeshStandardMaterial({
+          map: frontTex,
+          roughness: 0.36,
+          metalness: 0.04
+        });
+        const sideMat = isActive ? matTileActiveSide : matTileSide;
+
+        // Main beveled-look 3D block
+        const blockMesh = new THREE.Mesh(
+          new THREE.BoxGeometry(tileW, tileH, tileD),
+          [sideMat, sideMat, sideMat, sideMat, matFront, sideMat]
+        );
+        blockMesh.castShadow = true;
+        blockMesh.receiveShadow = true;
+        blockMesh.userData = { dayInfo };
+        interactiveDayMeshes.push(blockMesh);
+        tileGroup.add(blockMesh);
+
+        // Raised golden-burgundy badge crest on top of the active day block
+        if (isActive) {
+          const badgeCrest = new THREE.Mesh(
+            new THREE.BoxGeometry(tileW * 0.72, 0.06, tileD + 0.03),
+            brassMaterial
+          );
+          badgeCrest.position.set(0, tileH / 2 + 0.03, 0);
+          tileGroup.add(badgeCrest);
+        }
+
+        tileGroup.position.set(xPos, yPos, zPos);
+        tileGroup.rotation.x = -0.09;
+        calendarTilesGroup.add(tileGroup);
+      });
+    }
+
+    // =========================================================================
+    // 7. Mount Model, Interactive Day Click Raycaster & Immediate Render
+    // =========================================================================
+    const weeklyCalendarObj = buildWeeklyCalendarDiorama();
+    scene.add(weeklyCalendarObj);
+
+    function updateModelStats() {
+      let meshCount = 0;
+      let triCount = 0;
+      weeklyCalendarObj.traverse((obj) => {
+        if (obj.isMesh && obj.visible) {
+          meshCount++;
+          const g = obj.geometry;
+          if (g.index) triCount += g.index.count / 3;
+          else if (g.attributes.position) triCount += g.attributes.position.count / 3;
+        }
+      });
+      document.getElementById('model-stats').textContent =
+        `加高展示框 (淨高 2.95) · 灰白實體白六公仔 · 本週 7 日立體方塊 (${Math.round(triCount).toLocaleString()} 面)`;
+    }
+    updateModelStats();
+
+    // Guaranteed immediate render
+    renderer.render(scene, camera);
+
+    // Click any of the 7 calendar blocks to pop it forward
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    let pointerDownPos = { x: 0, y: 0 };
+
+    renderer.domElement.addEventListener('pointerdown', (e) => {
+      pointerDownPos = { x: e.clientX, y: e.clientY };
+    });
+
+    renderer.domElement.addEventListener('pointerup', (e) => {
+      const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+      if (dist > 6) return;
+
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(pointer, camera);
+      const hits = raycaster.intersectObjects(interactiveDayMeshes, false);
+      if (hits.length > 0) {
+        const info = hits[0].object.userData.dayInfo;
+        if (info) {
+          activeDayNum = info.day;
+          rebuildCalendarTiles();
+          document.getElementById('status-badge').textContent =
+            info.isToday ? `● 今日：${info.dateStr} (${info.zhWeek})` : `● 已選取：${info.dateStr} (${info.zhWeek})`;
+          showToast(`已凸起標註：${info.year}/${info.dateStr}（${info.zhWeek}）`, 'info');
+        }
+      }
+    });
+
+    // =========================================================================
+    // 8. Import External Custom Bailiu .glb (Auto-Scaled & Centered)
+    // =========================================================================
+    const gltfLoader = new GLTFLoader();
+    let customLoadedGroup = null;
+
+    function loadCustomFigurineIntoFrame(file) {
+      if (!file) return;
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (ext !== 'glb' && ext !== 'gltf') {
+        showToast('請選擇有效的 .glb 或 .gltf 檔案', 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        gltfLoader.parse(
+          ev.target.result,
+          '',
+          (gltf) => {
+            const loaded = gltf.scene;
+            loaded.traverse((c) => {
+              if (c.isMesh) {
+                c.castShadow = true;
+                c.receiveShadow = true;
+              }
+            });
+
+            // Auto-scale and center inside upper chamber (clear height = 2.95) with safe margin
+            const box = new THREE.Box3().setFromObject(loaded);
+            if (!box.isEmpty()) {
+              const size = box.getSize(new THREE.Vector3());
+              const center = box.getCenter(new THREE.Vector3());
+              const maxAllowedH = UPPER_CHAMBER_CLEAR_HEIGHT * 0.80;
+              const maxAllowedW = UPPER_CHAMBER_CLEAR_WIDTH * 0.82;
+              const scaleH = maxAllowedH / (size.y || 1);
+              const scaleW = maxAllowedW / (Math.max(size.x, size.z) || 1);
+              const s = Math.min(scaleH, scaleW);
+
+              loaded.scale.setScalar(s);
+              loaded.position.x = -center.x * s;
+              loaded.position.z = -center.z * s;
+              loaded.position.y = -box.min.y * s;
+            }
+
+            if (customLoadedGroup) {
+              figurineHolderGroup.remove(customLoadedGroup);
+            }
+            builtInBaiLiuGroup.visible = false;
+            customLoadedGroup = loaded;
+            customLoadedGroup.name = 'CustomImportedBaiLiu';
+            figurineHolderGroup.add(customLoadedGroup);
+
+            const restoreBtn = document.getElementById('btn-restore-bailiu');
+            restoreBtn.classList.remove('hidden');
+            restoreBtn.classList.add('flex');
+
+            updateModelStats();
+            showToast(`已成功匯入「${file.name}」並置中於立體框內！`, 'success');
+          },
+          (err) => {
+            console.error(err);
+            showToast('無法解析此 GLB/GLTF 檔案', 'error');
+          }
+        );
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    document.getElementById('glb-file-input').addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (file) loadCustomFigurineIntoFrame(file);
+      e.target.value = '';
+    });
+
+    document.getElementById('btn-restore-bailiu').addEventListener('click', () => {
+      if (customLoadedGroup) {
+        figurineHolderGroup.remove(customLoadedGroup);
+        customLoadedGroup = null;
+      }
+      builtInBaiLiuGroup.visible = true;
+      const restoreBtn = document.getElementById('btn-restore-bailiu');
+      restoreBtn.classList.add('hidden');
+      restoreBtn.classList.remove('flex');
+      updateModelStats();
+      showToast('已恢復內建灰白實體白六公仔', 'info');
+    });
+
+    // Drag & Drop support
+    const dropOverlay = document.getElementById('drop-overlay');
+    let dragCounter = 0;
+
+    window.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+      dragCounter++;
+      dropOverlay.classList.remove('hidden');
+      dropOverlay.classList.add('flex');
+    });
+    window.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dragCounter--;
+      if (dragCounter <= 0) {
+        dragCounter = 0;
+        dropOverlay.classList.add('hidden');
+        dropOverlay.classList.remove('flex');
+      }
+    });
+    window.addEventListener('dragover', (e) => e.preventDefault());
+    window.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dragCounter = 0;
+      dropOverlay.classList.add('hidden');
+      dropOverlay.classList.remove('flex');
+      const file = e.dataTransfer?.files?.[0];
+      if (file) loadCustomFigurineIntoFrame(file);
+    });
+
+    // =========================================================================
+    // 9. One-Click Collapse/Expand UI ('收合介面' / '展開介面' & 'H' Key)
+    // =========================================================================
+    let isUiCollapsed = false;
+    const uiHeader = document.getElementById('ui-header');
+    const uiFooter = document.getElementById('ui-footer');
+    const btnCollapseUi = document.getElementById('btn-collapse-ui');
+    const btnExpandUi = document.getElementById('btn-expand-ui');
+
+    function setUiCollapsed(collapsed) {
+      isUiCollapsed = collapsed;
+      if (isUiCollapsed) {
+        uiHeader.classList.add('hidden');
+        uiFooter.classList.add('hidden');
+        btnExpandUi.classList.remove('hidden');
+        btnExpandUi.classList.add('flex');
+      } else {
+        uiHeader.classList.remove('hidden');
+        uiFooter.classList.remove('hidden');
+        btnExpandUi.classList.add('hidden');
+        btnExpandUi.classList.remove('flex');
+      }
+    }
+
+    btnCollapseUi.addEventListener('click', () => setUiCollapsed(true));
+    btnExpandUi.addEventListener('click', () => setUiCollapsed(false));
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'h' || e.key === 'H') {
+        setUiCollapsed(!isUiCollapsed);
+      }
+    });
+
+    // =========================================================================
+    // 10. Frame Finishes, Camera Presets, Animation & GLB Export
+    // =========================================================================
+    let isLifeAnim = true;
+    let isWireframe = false;
+
+    function resetPoseToStatic() {
+      if (animParts.upperBodyGroup) animParts.upperBodyGroup.scale.set(1, 1, 1);
+      if (animParts.headGroup) {
+        animParts.headGroup.rotation.y = -0.22;
+        animParts.headGroup.rotation.z = 0.04;
+      }
+      if (animParts.tailGroup) {
+        animParts.tailGroup.rotation.y = 0;
+        animParts.tailGroup.rotation.z = 0;
+      }
+      if (animParts.tagGroup) {
+        animParts.tagGroup.rotation.z = -sampleNeckRingTransform(0.74).tiltAngleZ;
+      }
+    }
+
+    // Frame Material Finish Switcher (Walnut Wood / Matte Black / White Oak)
+    document.querySelectorAll('.finish-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.finish;
+        frameMaterial.map = createFrameFinishTexture(key);
+        frameMaterial.roughness = key === 'matteBlack' ? 0.68 : 0.48;
+        frameMaterial.needsUpdate = true;
+
+        document.querySelectorAll('.finish-btn').forEach((b) => {
+          if (b.dataset.finish === key) {
+            b.className = 'finish-btn rounded-xl px-2.5 py-1.5 text-xs font-semibold bg-amber-700 text-white shadow-sm transition';
+          } else {
+            b.className = 'finish-btn rounded-xl px-2.5 py-1.5 text-xs font-semibold text-stone-600 hover:text-stone-900 transition';
+          }
+        });
+      });
+    });
+
+    // Camera Presets
+    document.querySelectorAll('.cam-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.cam;
+        const p = CAMERA_PRESETS[key];
+        if (!p) return;
+
+        camera.position.copy(p.pos);
+        controls.target.copy(p.target);
+        controls.update();
+
+        document.querySelectorAll('.cam-btn').forEach((b) => {
+          if (b.dataset.cam === key) {
+            b.className = 'cam-btn rounded-xl px-2.5 py-1 text-xs font-semibold bg-amber-500 text-stone-950 shadow-sm transition';
+          } else {
+            b.className = 'cam-btn rounded-xl px-2.5 py-1 text-xs font-semibold text-stone-600 hover:text-stone-900 transition';
+          }
+        });
+      });
+    });
+
+    // Breathing & Tail Animation Toggle
+    const btnAnim = document.getElementById('btn-anim');
+    btnAnim.addEventListener('click', () => {
+      isLifeAnim = !isLifeAnim;
+      if (isLifeAnim) {
+        btnAnim.className = 'flex items-center gap-1.5 rounded-2xl bg-rose-700 px-3 py-2 text-xs font-semibold text-white shadow-sm active:scale-95 transition';
+      } else {
+        btnAnim.className = 'flex items-center gap-1.5 rounded-2xl bg-stone-600 hover:bg-stone-500 px-3 py-2 text-xs font-semibold text-white active:scale-95 transition';
+        resetPoseToStatic();
+      }
+    });
+
+    // Wireframe Toggle
+    const btnWireframe = document.getElementById('btn-wireframe');
+    btnWireframe.addEventListener('click', () => {
+      isWireframe = !isWireframe;
+      weeklyCalendarObj.traverse((obj) => {
+        if (obj.isMesh && obj.material) {
+          const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+          mats.forEach((m) => {
+            m.wireframe = isWireframe;
+          });
+        }
+      });
+      if (isWireframe) {
+        btnWireframe.classList.add('ring-2', 'ring-indigo-500');
+      } else {
+        btnWireframe.classList.remove('ring-2', 'ring-indigo-500');
+      }
+    });
+
+    // Auto-Rotate Toggle
+    const btnAutoRotate = document.getElementById('btn-autorotate');
+    const iconAutoRotate = document.getElementById('icon-autorotate');
+    btnAutoRotate.addEventListener('click', () => {
+      controls.autoRotate = !controls.autoRotate;
+      if (controls.autoRotate) {
+        btnAutoRotate.className = 'flex items-center gap-1.5 rounded-2xl bg-teal-700 px-3 py-2 text-xs font-semibold text-white shadow-sm active:scale-95 transition';
+        iconAutoRotate.classList.add('animate-spin');
+      } else {
+        btnAutoRotate.className = 'flex items-center gap-1.5 rounded-2xl bg-stone-600 hover:bg-stone-500 px-3 py-2 text-xs font-semibold text-white active:scale-95 transition';
+        iconAutoRotate.classList.remove('animate-spin');
+      }
+    });
+
+    // GLB Exporter ('bailiu_weekly_calendar_2026w47.glb')
+    document.getElementById('btn-export-glb').addEventListener('click', () => {
+      const prevAnim = isLifeAnim;
+      isLifeAnim = false;
+      resetPoseToStatic();
+
+      if (isWireframe) {
+        weeklyCalendarObj.traverse((obj) => {
+          if (obj.isMesh && obj.material) {
+            const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+            mats.forEach((m) => (m.wireframe = false));
+          }
+        });
+      }
+
+      showToast('正在產生 bailiu_weekly_calendar_2026w47.glb ...', 'info');
+
+      const exporter = new GLTFExporter();
+      exporter.parse(
+        weeklyCalendarObj,
+        (result) => {
+          if (isWireframe) {
+            weeklyCalendarObj.traverse((obj) => {
+              if (obj.isMesh && obj.material) {
+                const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+                mats.forEach((m) => (m.wireframe = true));
+              }
+            });
+          }
+          isLifeAnim = prevAnim;
+
+          if (result instanceof ArrayBuffer) {
+            const blob = new Blob([result], { type: 'model/gltf-binary' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'bailiu_weekly_calendar_2026w47.glb';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+            const kb = (blob.size / 1024).toFixed(1);
+            showToast(`匯出成功！已下載 bailiu_weekly_calendar_2026w47.glb (${kb} KB)`, 'success');
+          } else {
+            showToast('匯出格式異常，請重試', 'error');
+          }
+        },
+        (err) => {
+          console.error(err);
+          isLifeAnim = prevAnim;
+          showToast('模型匯出失敗，請重試', 'error');
+        },
+        { binary: true, onlyVisible: true }
+      );
+    });
+
+    // =========================================================================
+    // 11. Responsive Resize & Render Loop
+    // =========================================================================
+    window.addEventListener('resize', () => {
+      const w = container.clientWidth || window.innerWidth;
+      const h = container.clientHeight || window.innerHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    });
+
+    const clock = new THREE.Clock();
+    const baseTagAngle = -sampleNeckRingTransform(0.74).tiltAngleZ;
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const t = clock.getElapsedTime();
+
+      if (isLifeAnim && builtInBaiLiuGroup && builtInBaiLiuGroup.visible) {
+        const breath = Math.sin(t * 2.4);
+        if (animParts.upperBodyGroup) {
+          animParts.upperBodyGroup.scale.set(
+            1 + breath * 0.011,
+            1 + breath * 0.005,
+            1 + breath * 0.013
+          );
+        }
+        if (animParts.headGroup) {
+          animParts.headGroup.rotation.y = -0.22 + Math.sin(t * 1.1) * 0.04;
+          animParts.headGroup.rotation.z = 0.04 + Math.cos(t * 1.5) * 0.02;
+        }
+        if (animParts.tailGroup) {
+          animParts.tailGroup.rotation.y = Math.sin(t * 4.5) * 0.16;
+        }
+        if (animParts.tagGroup) {
+          animParts.tagGroup.rotation.z = baseTagAngle + Math.sin(t * 2.4 + 0.6) * 0.08;
+        }
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    animate();
+    window.addEventListener('load', () => {
+      renderer.render(scene, camera);
+    });
+  </script>
+</body>
+</html>
